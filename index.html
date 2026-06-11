@@ -400,44 +400,49 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
     </div>
     <div class="content">
-      <div style="max-width:780px">
-        <!-- AI GENERATE -->
-        <div class="ai-generate-box">
-          <div class="ai-gen-header">
-            <div class="ai-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
-            <div>
-              <div class="ai-gen-title">Згенерувати скрипт за допомогою AI</div>
-              <div class="ai-gen-sub">Опишіть ваш продукт і мету — AI побудує структурований скрипт</div>
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+
+        <!-- LEFT: script -->
+        <div>
+          <!-- AI GENERATE -->
+          <div class="ai-generate-box" style="margin-bottom:20px">
+            <div class="ai-gen-header">
+              <div class="ai-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+              <div>
+                <div class="ai-gen-title">Згенерувати скрипт за допомогою AI</div>
+                <div class="ai-gen-sub">Поля заповнені з брифу — або змініть вручну</div>
+              </div>
             </div>
+            <div class="ai-gen-fields">
+              <div class="form-field"><label class="form-label">Продукт / сервіс</label><input type="text" class="form-input" id="ai-product" placeholder="Що за продукт?" style="font-size:12px"></div>
+              <div class="form-field"><label class="form-label">Цільова аудиторія</label><input type="text" class="form-input" id="ai-audience" placeholder="Хто ваш клієнт?" style="font-size:12px"></div>
+              <div class="form-field" style="grid-column:1/-1"><label class="form-label">Що хочу дізнатись</label><textarea class="form-input form-textarea" id="ai-goal" placeholder="Які гіпотези перевіряєте..." style="min-height:56px;font-size:12px"></textarea></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="generateScript()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Згенерувати скрипт
+            </button>
           </div>
-          <div class="ai-gen-fields">
-            <div class="form-field"><label class="form-label">Продукт / сервіс</label><input type="text" class="form-input" id="ai-product" placeholder="Що за продукт?" style="font-size:12px"></div>
-            <div class="form-field"><label class="form-label">Цільова аудиторія</label><input type="text" class="form-input" id="ai-audience" placeholder="Хто ваш клієнт?" style="font-size:12px"></div>
-            <div class="form-field" style="grid-column:1/-1"><label class="form-label">Що хочу дізнатись</label><textarea class="form-input form-textarea" id="ai-goal" placeholder="Які гіпотези перевіряєте, що хочете зрозуміти..." style="min-height:56px;font-size:12px"></textarea></div>
+
+          <div class="form-field" style="margin-bottom:20px">
+            <label class="form-label">Мета інтерв'ю</label>
+            <textarea class="form-input form-textarea" id="script-goal" style="min-height:52px" placeholder="Що хочете з'ясувати в цих інтерв'ю..."></textarea>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="generateScript()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Згенерувати скрипт
+          <div class="section-title">Питання скрипту</div>
+          <div id="script-questions-list" class="script-block"></div>
+          <button class="btn btn-secondary" style="margin-top:12px;width:100%;justify-content:center" onclick="addManualQuestion()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Додати питання вручну
           </button>
         </div>
 
-        <div class="form-field" style="margin-bottom:20px">
-          <label class="form-label">Мета інтерв'ю</label>
-          <textarea class="form-input form-textarea" id="script-goal" style="min-height:52px" placeholder="Що хочете з'ясувати в цих інтерв'ю..."></textarea>
-        </div>
-        <div class="section-title">Питання скрипту</div>
-        <div id="script-questions-list" class="script-block"></div>
-        <button class="btn btn-secondary" style="margin-top:12px;width:100%;justify-content:center" onclick="addManualQuestion()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Додати питання вручну
-        </button>
-
-        <!-- TEMPLATES -->
-        <div style="margin-top:28px">
+        <!-- RIGHT: templates -->
+        <div style="position:sticky;top:24px">
           <div class="section-title" style="margin-bottom:10px">Шаблони питань</div>
-          <p style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:16px">Розкрийте групу → оберіть окремі питання або додайте всі одразу</p>
+          <p style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:14px">Розкрийте групу → оберіть або додайте всі одразу</p>
           <div id="template-groups"></div>
         </div>
+
       </div>
     </div>
   </div>
@@ -460,7 +465,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         </button>
       </div>
     </div>
-    <div class="content" id="brief-content">
+    <div class="content" id="brief-content" style="max-width:100%">
       <div class="empty-state">
         <div class="empty-icon">📋</div>
         <div class="empty-title">Бриф ще не створено</div>
@@ -890,6 +895,31 @@ async function createProject() {
 let briefEditMode = false;
 let currentBriefData = null;
 
+async function fillScriptFromProject() {
+  if (!currentProjectId) return;
+  // fetch project data
+  const projs = await sb(`projects?id=eq.${currentProjectId}&limit=1`);
+  if (!projs || !projs[0]) return;
+  const proj = projs[0];
+
+  // fill AI generate fields from project info
+  const productEl = document.getElementById('ai-product');
+  const audienceEl = document.getElementById('ai-audience');
+  const goalEl = document.getElementById('ai-goal');
+
+  if (productEl && !productEl.value) productEl.value = proj.name || '';
+  if (audienceEl && !audienceEl.value) audienceEl.value = proj.target_audience || '';
+  if (goalEl && !goalEl.value) goalEl.value = proj.description || '';
+
+  // also fill from brief if exists
+  if (proj.brief_json) {
+    const brief = proj.brief_json;
+    if (goalEl && !goalEl.value && brief.hypotheses?.items?.length) {
+      goalEl.value = brief.hypotheses.items.join('\n');
+    }
+  }
+}
+
 async function loadBrief() {
   if (!currentProjectId) return;
   const proj = await sb(`projects?id=eq.${currentProjectId}&limit=1`);
@@ -993,7 +1023,7 @@ function renderBrief(brief) {
   const phaseColors = ['#7C3AED','#2563EB','#059669','#D97706'];
   const content = document.getElementById('brief-content');
   content.innerHTML = `
-    <div style="max-width:860px">
+    <div style="width:100%">
 
       <!-- HERO -->
       <div style="background:var(--accent-grad);border-radius:16px;padding:28px 32px;margin-bottom:24px;color:white;position:relative;overflow:hidden">
@@ -1895,6 +1925,7 @@ function showPage(id) {
   if(id==='quotes') loadQuotesPage();
   if(id==='analysis') loadQuotesPage();
   if(id==='brief') loadBrief();
+  if(id==='script') fillScriptFromProject();
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
