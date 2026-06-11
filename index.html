@@ -745,6 +745,57 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
+<!-- MODAL: BRIEF CONTEXT -->
+<div class="overlay" id="modal-brief-context" onclick="closeModalOutside(event,'modal-brief-context')">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Оновити бриф з контексту</div>
+        <div class="modal-meta">Вставте тези з переписки з Claude — AI врахує їх у брифі</div>
+      </div>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal('modal-brief-context')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--accent-soft);border:1.5px solid #DDD6FE;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:var(--accent-text);font-weight:500;line-height:1.6">
+        💡 <strong>Як це зробити:</strong> Відкрийте переписку з Claude де обговорювали цей проєкт → скопіюйте ключові висновки, гіпотези, рішення → вставте сюди. AI оновить бриф з урахуванням цього контексту.
+      </div>
+      <div class="form-field">
+        <label class="form-label">Контекст з переписки</label>
+        <textarea class="form-input form-textarea" id="brief-context-input" style="min-height:200px" placeholder="Вставте текст з переписки з Claude або будь-які нотатки по проєкту..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-brief-context')">Скасувати</button>
+      <button class="btn btn-primary" onclick="updateBriefFromContext()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Оновити бриф
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT PROJECT -->
+<div class="overlay" id="modal-edit-project" onclick="closeModalOutside(event,'modal-edit-project')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Редагувати проєкт</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal('modal-edit-project')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-id">
+      <div class="form-grid">
+        <div class="form-field"><label class="form-label">Назва проєкту *</label><input type="text" class="form-input" id="ep-name"></div>
+        <div class="form-field"><label class="form-label">Опис / мета discovery</label><textarea class="form-input form-textarea" id="ep-desc"></textarea></div>
+        <div class="form-field"><label class="form-label">Цільова аудиторія</label><input type="text" class="form-input" id="ep-audience"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-project')">Скасувати</button>
+      <button class="btn btn-primary" onclick="saveEditProject()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -834,9 +885,19 @@ async function loadProjects() {
       const card = document.createElement('div');
       card.className = 'project-card';
       card.innerHTML = `
-        <div style="margin-bottom:12px"><span class="badge badge-active">Активний</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <span class="badge badge-active">Активний</span>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();openEditProject('${p.id}','${p.name.replace(/'/g,"\\'")}','${(p.description||'').replace(/'/g,"\\'")}','${(p.target_audience||'').replace(/'/g,"\\'")}');" title="Редагувати" style="color:var(--text3)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-icon btn-sm" onclick="event.stopPropagation();deleteProject('${p.id}');" title="Видалити" style="color:var(--red)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>
         <div style="font-size:16px;font-weight:800;margin-bottom:8px;letter-spacing:-0.3px">${p.name}</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;font-weight:500">${p.description||''}</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;font-weight:500;line-height:1.5">${p.description||''}</div>
         <div style="display:flex;gap:18px">
           <span style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${total}</strong> інтерв'ю</span>
           <span style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${analyzed}</strong> проаналізовано</span>
@@ -850,6 +911,35 @@ async function loadProjects() {
   newCard.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:30px;height:30px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span style="font-size:13px;font-weight:700">Новий проєкт</span>`;
   newCard.onclick = () => openModal('modal-new-project');
   grid.appendChild(newCard);
+}
+
+async function deleteProject(id) {
+  if (!confirm('Видалити проєкт? Всі інтерв\'ю, відповіді та цитати будуть видалені.')) return;
+  showLoader('Видалення...');
+  try {
+    const ivs = await sb(`interviews?project_id=eq.${id}&select=id`);
+    if (ivs) for (const iv of ivs) {
+      await sb(`answers?interview_id=eq.${iv.id}`, 'DELETE');
+      await sb(`quotes?interview_id=eq.${iv.id}`, 'DELETE');
+    }
+    await sb(`interviews?project_id=eq.${id}`, 'DELETE');
+    await sb(`script_questions?script_id=in.(select id from scripts where project_id='${id}')`, 'DELETE');
+    await sb(`scripts?project_id=eq.${id}`, 'DELETE');
+    await sb(`quotes?project_id=eq.${id}`, 'DELETE');
+    await sb(`projects?id=eq.${id}`, 'DELETE');
+    await loadProjects();
+    showToast('Проєкт видалено');
+    if (currentProjectId === id) { currentProjectId = null; showPage('projects'); }
+  } catch(e) { showToast('Помилка: ' + e.message); console.error(e); }
+  hideLoader();
+}
+
+function openEditProject(id, name, desc, audience) {
+  document.getElementById('ep-id').value = id;
+  document.getElementById('ep-name').value = name;
+  document.getElementById('ep-desc').value = desc;
+  document.getElementById('ep-audience').value = audience;
+  openModal('modal-edit-project');
 }
 
 async function createProject() {
@@ -918,6 +1008,42 @@ async function fillScriptFromProject() {
       goalEl.value = brief.hypotheses.items.join('\n');
     }
   }
+}
+
+function openBriefContextModal() {
+  openModal('modal-brief-context');
+}
+
+async function updateBriefFromContext() {
+  const context = document.getElementById('brief-context-input').value.trim();
+  if (!context) { showToast('Вставте контекст з переписки'); return; }
+  closeModal('modal-brief-context');
+  const proj = (await sb(`projects?id=eq.${currentProjectId}&limit=1`))[0];
+  if (!proj) return;
+  showLoader('AI оновлює бриф з контексту...');
+  await generateBriefForProject(proj, context);
+  hideLoader();
+  showToast('Бриф оновлено ✓');
+}
+
+async function saveEditProject() {
+  const id = document.getElementById('ep-id').value;
+  const name = document.getElementById('ep-name').value.trim();
+  if (!name) { showToast('Введіть назву'); return; }
+  try {
+    await sb(`projects?id=eq.${id}`, 'PATCH', {
+      name,
+      description: document.getElementById('ep-desc').value,
+      target_audience: document.getElementById('ep-audience').value
+    });
+    closeModal('modal-edit-project');
+    await loadProjects();
+    if (currentProjectId === id) {
+      currentProjectName = name;
+      document.getElementById('current-project-name').textContent = name;
+    }
+    showToast('Проєкт оновлено ✓');
+  } catch(e) { showToast('Помилка: ' + e.message); }
 }
 
 async function loadBrief() {
@@ -1026,11 +1152,34 @@ function renderBrief(brief) {
     <div style="width:100%">
 
       <!-- HERO -->
-      <div style="background:var(--accent-grad);border-radius:16px;padding:28px 32px;margin-bottom:24px;color:white;position:relative;overflow:hidden">
+      <div style="background:var(--accent-grad);border-radius:16px;padding:28px 32px;margin-bottom:16px;color:white;position:relative;overflow:hidden">
         <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.7;margin-bottom:8px">Бриф проєкту</div>
         <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:6px" id="brief-title-display">${currentProjectName}</div>
         <div style="font-size:14px;opacity:0.85;font-weight:500" id="brief-tagline-display">${brief.tagline||''}</div>
+      </div>
+
+      <!-- CLAUDE CONTEXT LINK -->
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--sidebar-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700">Контекст з переписки з Claude</div>
+            <div style="font-size:12px;color:var(--text2);font-weight:500;margin-top:1px">Скопіюйте ключові тези з вашої переписки і вставте в поле "Контекст" при оновленні брифу</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <a href="https://claude.ai" target="_blank" class="btn btn-secondary btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Відкрити Claude
+          </a>
+          <button class="btn btn-primary btn-sm" onclick="openBriefContextModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Оновити з контексту
+          </button>
+        </div>
       </div>
 
       <!-- TOP ROW -->
@@ -1193,12 +1342,33 @@ function renderInterviews(list) {
       <div class="td sub">${[iv.company,iv.role].filter(Boolean).join(' · ')}</div>
       <div class="td sub">${iv.interview_date ? formatDate(iv.interview_date) : '—'}</div>
       <div class="td"><span class="badge ${statusClass(iv.status)}">${statusLabel(iv.status)}</span></div>
-      <div class="td" style="display:flex;gap:4px">
+      <div class="td" style="display:flex;gap:4px;justify-content:flex-end">
         <button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();copyInterviewById('${iv.id}')" title="Скопіювати">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();openInterview('${iv.id}')" title="Редагувати">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-sm btn-icon" style="color:var(--red)" onclick="event.stopPropagation();deleteInterview('${iv.id}')" title="Видалити">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
       </div>
     </div>`).join('');
+}
+
+async function deleteInterview(id) {
+  if (!confirm('Видалити це інтерв\'ю? Всі відповіді та цитати теж будуть видалені.')) return;
+  showLoader('Видалення...');
+  try {
+    await sb(`answers?interview_id=eq.${id}`, 'DELETE');
+    await sb(`quotes?interview_id=eq.${id}`, 'DELETE');
+    await sb(`interviews?id=eq.${id}`, 'DELETE');
+    allInterviews = allInterviews.filter(i=>i.id!==id);
+    renderInterviews(allInterviews);
+    updateStats();
+    showToast('Інтерв\'ю видалено');
+  } catch(e) { showToast('Помилка: ' + e.message); }
+  hideLoader();
 }
 
 function updateStats() {
@@ -1458,10 +1628,18 @@ function renderScriptQuestions() {
   }
   el.innerHTML = scriptQuestions.map((q,i) => `
     <div class="script-question" data-qid="${q.id}">
-      <div class="script-q-header"><span class="q-num">${i+1}</span>
+      <div class="script-q-header">
+        <span class="q-num">${i+1}</span>
         <input type="text" value="${q.question.replace(/"/g,'&quot;')}" class="form-input" style="font-weight:700;font-size:13px;border:none;padding:0;background:transparent;flex:1" onchange="updateQuestionText('${q.id}',this.value)">
       </div>
-      <input type="text" value="${(q.purpose||'').replace(/"/g,'&quot;')}" class="form-input" style="font-size:11px;color:var(--text3);border:none;padding:0 0 0 36px;background:transparent;font-style:italic" placeholder="Мета цього питання..." onchange="updateQuestionPurpose('${q.id}',this.value)">
+      ${q.purpose ? `
+      <div style="margin-left:36px;margin-top:4px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;font-weight:700;color:var(--accent-text);background:var(--accent-soft);border:1px solid #DDD6FE;border-radius:20px;padding:2px 8px;text-transform:uppercase;letter-spacing:0.4px">Мета</span>
+        <input type="text" value="${q.purpose.replace(/"/g,'&quot;')}" class="form-input" style="font-size:12px;color:var(--text2);border:none;padding:0;background:transparent;font-style:italic;flex:1" placeholder="Навіщо це питання..." onchange="updateQuestionPurpose('${q.id}',this.value)">
+      </div>` : `
+      <div style="margin-left:36px;margin-top:4px;margin-bottom:8px">
+        <input type="text" value="" class="form-input" style="font-size:12px;color:var(--text3);border:none;padding:0;background:transparent;font-style:italic;width:100%" placeholder="+ Додати мету питання..." onchange="updateQuestionPurpose('${q.id}',this.value)">
+      </div>`}
       <div class="script-q-actions">
         <button class="btn btn-danger btn-sm" style="font-size:11px;padding:4px 8px" onclick="deleteQuestion('${q.id}')">Видалити</button>
       </div>
