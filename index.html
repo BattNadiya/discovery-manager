@@ -964,7 +964,7 @@ ${extraContext ? `\nДодатковий контекст:\n${extraContext}` : '
 Мова: українська. Бриф має бути конкретним і практичним, не загальним.`;
 
   try {
-    const result = await callClaude(prompt, 1500);
+    const result = await callClaude(prompt, 3000);
     const brief = JSON.parse(result.replace(/```json|```/g,'').trim());
     // save to DB
     await sb(`projects?id=eq.${proj.id}`, 'PATCH', { brief_json: brief });
