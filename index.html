@@ -1971,12 +1971,30 @@ function updateAiKeyStatus() {
 }
 
 // ═══════════════════════════════════════
+// AUTO MIGRATIONS
+// ═══════════════════════════════════════
+async function runMigrations() {
+  const migrations = [
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS brief_json jsonb`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS interview_duration int default 60`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS interview_format text default 'online'`,
+  ];
+  for (const sql of migrations) {
+    try {
+      await sb('rpc/run_migration', 'POST', { sql });
+    } catch(e) {
+      // column likely already exists — silent fail
+    }
+  }
+}
+
+// ═══════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════
 renderTemplates();
 updateAiKeyStatus();
 if (CLAUDE_KEY) document.getElementById('claude-key-input').value = CLAUDE_KEY;
-init();
+runMigrations().then(() => init());
 </script>
 </body>
 </html>
