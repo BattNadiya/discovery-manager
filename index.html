@@ -1886,42 +1886,54 @@ ${transcript}
 }
 
 async function generateInterviewSummary() {
+  if (!CLAUDE_KEY) { openModal('modal-api-key'); return; }
+
   const textareas = document.querySelectorAll('#detail-answers-list .script-answer');
-  const answers = Array.from(textareas).map((ta,i) => {
-    const qEl = ta.closest('.script-question').querySelector('.q-text');
-    return `П: ${qEl ? qEl.textContent : ''}\nВ: ${ta.value||'—'}`;
+  if (!textareas.length) { showToast('Спочатку заповніть відповіді'); return; }
+
+  const answers = Array.from(textareas).map((ta, i) => {
+    const qEl = ta.closest('.script-question')?.querySelector('.q-text');
+    const qText = qEl ? qEl.textContent.trim() : `Питання ${i+1}`;
+    return `П: ${qText}\nВ: ${ta.value.trim() || '(не заповнено)'}`;
   }).join('\n\n');
 
-  if (!answers.trim()) { showToast('Спочатку заповніть відповіді'); return; }
+  const hasContent = Array.from(textareas).some(ta => ta.value.trim());
+  if (!hasContent) { showToast('Заповніть хоча б одну відповідь'); return; }
+
   showLoader('AI генерує підсумок...');
   try {
     const prompt = `Проаналізуй це customer discovery інтерв'ю і дай структурований підсумок українською мовою.
 
 ${answers}
 
-Структура відповіді:
+Структура відповіді (використовуй markdown bold **):
 **Профіль респондента:** (1 речення)
-**Головний біль:** (1-2 речення)  
+**Головний біль:** (1-2 речення)
 **Ключові інсайти:**
 - інсайт 1
 - інсайт 2
 - інсайт 3
 **Jobs to be done:** (що намагається досягти)
-**Готовність до рішення:** (оцінка)`;
+**Готовність до рішення:** (оцінка — низька/середня/висока + чому)`;
 
-    const result = await callClaude(prompt, 600);
-    document.getElementById('detail-summary-text').textContent = result;
-    document.getElementById('detail-summary-text').style.fontStyle = 'normal';
-    document.getElementById('detail-summary-text').style.color = 'var(--text)';
-    // save to DB
+    const result = await callClaude(prompt, 800);
+    const el = document.getElementById('detail-summary-text');
+    el.textContent = result;
+    el.style.fontStyle = 'normal';
+    el.style.color = 'var(--text)';
+
     await sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { ai_summary: result, status: 'analyzed' });
-    const idx = allInterviews.findIndex(i=>i.id===currentInterviewId);
-    if (idx>=0) { allInterviews[idx].ai_summary = result; allInterviews[idx].status = 'analyzed'; }
+    const idx = allInterviews.findIndex(i => i.id === currentInterviewId);
+    if (idx >= 0) { allInterviews[idx].ai_summary = result; allInterviews[idx].status = 'analyzed'; }
     renderInterviews(allInterviews);
     updateStats();
+
+    const badge = document.getElementById('detail-status-badge');
+    if (badge) { badge.className = 'badge badge-analyzed'; badge.textContent = 'Проаналізовано'; }
+
     showToast('Підсумок згенеровано ✓');
   } catch(e) {
-    showToast('Помилка AI — перевірте API ключ');
+    showToast('Помилка AI: ' + e.message);
     console.error(e);
   }
   hideLoader();
