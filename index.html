@@ -1832,52 +1832,53 @@ async function autofillFromTranscript() {
   if (!transcript) { showToast('Вставте транскрипт'); return; }
   if (!CLAUDE_KEY) { openModal('modal-api-key'); return; }
 
-  const questions = scriptQuestions.length > 0
-    ? scriptQuestions.map((q,i) => `${i+1}. ${q.question}`).join('\n')
-    : Array.from(document.querySelectorAll('#detail-answers-list .script-answer'))
-        .map((ta,i) => `${i+1}. ${ta.closest('.script-question')?.querySelector('.q-text')?.textContent || ''}`)
-        .join('\n');
+  const textareas = document.querySelectorAll('#detail-answers-list .script-answer');
+  const questions = textareas.length > 0
+    ? Array.from(textareas).map((ta, i) => {
+        const qEl = ta.closest('.script-question')?.querySelector('.q-text');
+        return `${i+1}. ${qEl ? qEl.textContent.trim() : ''}`;
+      }).join('\n')
+    : scriptQuestions.map((q,i) => `${i+1}. ${q.question}`).join('\n');
 
   if (!questions.trim()) { showToast('Спочатку додайте питання до скрипту'); return; }
 
   showLoader('AI аналізує транскрипт...');
   try {
-    const prompt = `Ти аналізуєш транскрипт customer discovery інтерв'ю. Знайди відповіді на кожне питання.
+    const prompt = `Ти аналізуєш транскрипт customer discovery інтерв'ю. Транскрипт може бути у будь-якому форматі — діалог, структуровані питання з відповідями, нотатки тощо.
 
-Питання скрипту:
+Питання скрипту які треба заповнити:
 ${questions}
 
 Транскрипт:
 ${transcript}
 
-Поверни ТІЛЬКИ JSON масив, без коментарів:
-[{"position": 1, "answer": "відповідь з транскрипту"}, {"position": 2, "answer": "..."}, ...]
+Знайди або витягни відповідь на кожне питання. Якщо питання схоже на те що є в транскрипті — використай ту відповідь. Якщо точної відповіді немає — поверни порожній рядок.
 
-Якщо відповіді на питання немає в транскрипті — поверни порожній рядок для цієї позиції.`;
+Поверни ТІЛЬКИ валідний JSON масив, без жодних коментарів чи markdown:
+[{"position": 1, "answer": "текст відповіді"}, {"position": 2, "answer": "текст відповіді"}, ...]`;
 
-    const result = await callClaude(prompt, 1500);
+    const result = await callClaude(prompt, 2000);
     const clean = result.replace(/```json|```/g,'').trim();
     const answers = JSON.parse(clean);
 
-    const textareas = document.querySelectorAll('#detail-answers-list .script-answer');
     let filled = 0;
     answers.forEach(a => {
       const ta = textareas[a.position - 1];
-      if (ta && a.answer) {
+      if (ta && a.answer && a.answer.trim()) {
         ta.value = a.answer;
         ta.style.borderColor = 'var(--green)';
+        ta.style.background = 'var(--green-soft)';
+        setTimeout(() => { ta.style.borderColor = ''; ta.style.background = ''; }, 3000);
         filled++;
       }
     });
 
-    showToast(`Заповнено ${filled} відповідей ✓ — перевірте і збережіть`);
+    showToast(`Заповнено ${filled} відповідей ✓`);
 
     // switch to answers tab
-    const tabsEl = document.querySelector('#modal-interview-detail .tabs');
-    if (tabsEl) {
-      const answersTab = tabsEl.querySelector('.tab');
-      if (answersTab) switchTab(answersTab, 'tab-answers');
-    }
+    const answersTab = document.querySelector('#modal-interview-detail .tabs .tab');
+    if (answersTab) switchTab(answersTab, 'tab-answers');
+
   } catch(e) {
     showToast('Помилка AI: ' + e.message);
     console.error(e);
