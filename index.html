@@ -1981,9 +1981,16 @@ ${answers}
 **Jobs to be done:** (що намагається досягти)
 **Готовність до рішення:** (оцінка — низька/середня/висока + чому)`;
 
-    const result = await callClaude(prompt, 800);
+    const result = await callClaude(prompt, 2000);
     const el = document.getElementById('detail-summary-text');
-    el.textContent = result;
+    // render markdown bold and lists
+    el.innerHTML = result
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul style="padding-left:18px;margin:6px 0">$1</ul>')
+      .replace(/\n\n/g, '</p><p style="margin-top:10px">')
+      .replace(/\n/g, '<br>');
     el.style.fontStyle = 'normal';
     el.style.color = 'var(--text)';
 
