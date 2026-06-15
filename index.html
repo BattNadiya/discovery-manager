@@ -630,13 +630,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
       <div id="tab-transcript" style="display:none">
         <div class="section-title">Транскрипт</div>
-        <textarea class="form-input form-textarea" id="transcript-input" style="min-height:340px;margin-bottom:14px;font-size:13px;width:100%" placeholder="Вставте транскрипт інтерв'ю сюди...&#10;&#10;Наприклад:&#10;— Розкажіть як у вас влаштований процес?&#10;— Ми зараз використовуємо Excel..."></textarea>
-        <div style="display:flex;gap:8px">
+        <textarea class="form-input form-textarea" id="transcript-input" style="min-height:340px;margin-bottom:14px;font-size:13px;width:100%" placeholder="Вставте транскрипт інтерв'ю сюди...&#10;&#10;Або натисніть 'Почати інтерв'ю' — розмова запишеться автоматично"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="autofillFromTranscript()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             Автозаповнити відповіді
           </button>
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('transcript-input').value='';showToast('Очищено')">Очистити</button>
+          <button class="btn btn-secondary btn-sm" onclick="saveTranscript()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Зберегти транскрипт
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadTranscript()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Завантажити .txt
+          </button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--text3)" onclick="document.getElementById('transcript-input').value='';transcriptBuffer='';showToast('Очищено')">Очистити</button>
         </div>
       </div>
 
@@ -1469,7 +1477,10 @@ async function openInterview(id) {
     document.getElementById('live-interview-banner').style.display = 'none';
     // notes
     document.getElementById('detail-notes').value = iv.general_notes||'';
-    // summary
+    // transcript
+    const transcriptInput = document.getElementById('transcript-input');
+    transcriptInput.value = iv.transcript || '';
+    transcriptBuffer = iv.transcript || '';    // summary
     document.getElementById('detail-summary-text').textContent = iv.ai_summary || 'Натисніть "Згенерувати" для отримання AI-підсумку';
     document.getElementById('detail-summary-text').style.fontStyle = iv.ai_summary ? 'normal' : 'italic';
     document.getElementById('detail-summary-text').style.color = iv.ai_summary ? 'var(--text)' : 'var(--text3)';
@@ -1538,6 +1549,47 @@ async function saveAnswers() {
     showToast('Відповіді збережено ✓');
   } catch(e) { showToast('Помилка: ' + e.message); }
   hideLoader();
+}
+
+async function saveTranscript() {
+  const text = document.getElementById('transcript-input').value;
+  try {
+    await sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { transcript: text });
+    transcriptBuffer = text;
+    showToast('Транскрипт збережено ✓');
+  } catch(e) { showToast('Помилка збереження: ' + e.message); }
+}
+
+function downloadTranscript() {
+  const text = document.getElementById('transcript-input').value.trim();
+  if (!text) { showToast('Транскрипт порожній'); return; }
+
+  const iv = allInterviews.find(i => i.id === currentInterviewId);
+  const name = iv ? iv.respondent_name.replace(/\s+/g, '_') : 'interview';
+  const date = iv?.interview_date || new Date().toISOString().slice(0,10);
+
+  // build full text file
+  const fullText = [
+    `ТРАНСКРИПТ ІНТЕРВ'Ю`,
+    `═══════════════════════════════`,
+    `Респондент: ${iv?.respondent_name || ''}`,
+    iv?.company ? `Компанія: ${iv.company}` : '',
+    iv?.role ? `Роль: ${iv.role}` : '',
+    `Дата: ${date}`,
+    `Проєкт: ${currentProjectName}`,
+    `═══════════════════════════════`,
+    '',
+    text
+  ].filter(Boolean).join('\n');
+
+  const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `transcript_${name}_${date}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Файл завантажується ✓');
 }
 
 async function saveNotes() {
@@ -2227,7 +2279,11 @@ function endInterview() {
     ta.placeholder = 'Відповідь...';
   });
   saveAnswers();
-  sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: 'done' });
+  if (transcriptBuffer.trim()) {
+    sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: 'done', transcript: transcriptBuffer });
+  } else {
+    sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: 'done' });
+  }
   const idx = allInterviews.findIndex(i=>i.id===currentInterviewId);
   if (idx>=0) allInterviews[idx].status = 'done';
   renderInterviews(allInterviews);
@@ -2362,13 +2418,12 @@ async function runMigrations() {
     `ALTER TABLE projects ADD COLUMN IF NOT EXISTS brief_json jsonb`,
     `ALTER TABLE projects ADD COLUMN IF NOT EXISTS interview_duration int default 60`,
     `ALTER TABLE projects ADD COLUMN IF NOT EXISTS interview_format text default 'online'`,
+    `ALTER TABLE interviews ADD COLUMN IF NOT EXISTS transcript text`,
   ];
   for (const sql of migrations) {
     try {
       await sb('rpc/run_migration', 'POST', { sql });
-    } catch(e) {
-      // column likely already exists — silent fail
-    }
+    } catch(e) {}
   }
 }
 
