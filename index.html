@@ -227,6 +227,20 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .brief-block-content{font-size:13px;color:var(--text);line-height:1.65;font-weight:500}
 [contenteditable="true"]{cursor:text}
 [contenteditable="true"]:hover{background:rgba(124,58,237,0.04);border-radius:4px}
+/* SUB-TABS */
+.sub-tab.active{color:var(--accent-text)!important;border-bottom-color:var(--accent)!important}
+.sub-tab:hover:not(.active){color:var(--text)!important}
+/* ROLE BUBBLES */
+.role-block{margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+.role-block.interviewer{flex-direction:row}
+.role-block.respondent{flex-direction:row-reverse}
+.role-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:2px}
+.role-block.interviewer .role-avatar{background:var(--accent-grad);color:white}
+.role-block.respondent .role-avatar{background:var(--surface2);color:var(--text2);border:1.5px solid var(--border)}
+.role-bubble{max-width:82%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;font-weight:500}
+.role-block.interviewer .role-bubble{background:var(--accent-soft);color:var(--accent-text);border-radius:4px 12px 12px 12px}
+.role-block.respondent .role-bubble{background:var(--surface2);color:var(--text);border-radius:12px 4px 12px 12px;border:1.5px solid var(--border)}
+.role-name{font-size:10px;font-weight:700;margin-bottom:4px;opacity:0.7}
 /* BRIEF */
 .transcript-box{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;font-size:13px;line-height:1.75;color:var(--text2);font-weight:500}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
@@ -339,33 +353,37 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <div class="topbar">
       <div class="topbar-left">
         <div class="topbar-title">Аналіз</div>
-        <div class="topbar-sub">Зведені інсайти по проєкту</div>
+        <div class="topbar-sub">Підсумки по кожному інтерв'ю та загальний аналіз</div>
       </div>
       <div class="topbar-actions">
-        <button class="btn btn-primary btn-sm" onclick="generateProjectSummary()">
+        <button class="btn btn-primary btn-sm" id="btn-project-summary" onclick="generateProjectSummary()" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          AI-підсумок
+          Загальний AI-підсумок
         </button>
       </div>
     </div>
     <div class="content">
-      <div id="analysis-ai-box" class="ai-box" style="margin-bottom:26px">
-        <div class="ai-box-header">
-          <div class="ai-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
-          <span class="ai-title">AI-підсумок по проєкту</span>
-        </div>
-        <div class="ai-insight" id="analysis-summary-text" style="color:var(--text3);font-style:italic">Натисніть "AI-підсумок" щоб згенерувати зведений аналіз по всіх проаналізованих інтерв'ю</div>
-      </div>
-      <div class="analysis-grid">
-        <div>
-          <div class="section-title">Цитати проєкту</div>
-          <div id="analysis-quotes-list" class="quote-list"></div>
-        </div>
-        <div>
-          <div class="section-title">Статистика</div>
-          <div id="analysis-stats"></div>
+
+      <!-- GENERAL SUMMARY — shown only if 2+ analyzed interviews -->
+      <div id="analysis-general-box" style="display:none;margin-bottom:28px">
+        <div class="ai-box">
+          <div class="ai-box-header">
+            <div class="ai-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+            <span class="ai-title">Загальний підсумок проєкту</span>
+          </div>
+          <div class="ai-insight" id="analysis-summary-text" style="color:var(--text3);font-style:italic">Натисніть "Загальний AI-підсумок" щоб згенерувати зведений аналіз</div>
         </div>
       </div>
+
+      <!-- PER-INTERVIEW SUMMARIES -->
+      <div id="analysis-interviews-list"></div>
+
+      <!-- QUOTES -->
+      <div style="margin-top:28px">
+        <div class="section-title">Цитати проєкту</div>
+        <div id="analysis-quotes-list" class="quote-list" style="max-width:860px"></div>
+      </div>
+
     </div>
   </div>
 
@@ -538,7 +556,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Скопіювати
         </button>
-        <button class="btn btn-ghost btn-icon" onclick="closeModal('modal-interview-detail')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="btn btn-ghost btn-icon" onclick="closeInterviewModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
     </div>
     <!-- Edit header -->
@@ -609,7 +627,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
 
       <div id="tab-answers">
-        <div class="section-title">Скрипт інтерв'ю</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="section-title" style="margin-bottom:0">Скрипт інтерв'ю</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--text2);font-weight:500">Статус:</span>
+            <select id="interview-status-select" class="filter-select" style="font-size:12px;padding:4px 8px" onchange="changeInterviewStatus(this.value)">
+              <option value="planned">Заплановано</option>
+              <option value="done">Проведено</option>
+              <option value="analyzed">Проаналізовано</option>
+            </select>
+          </div>
+        </div>
         <div id="detail-answers-list" class="script-block" style="margin-bottom:20px"></div>
         <button class="btn btn-secondary btn-sm" onclick="saveAnswers()" style="margin-bottom:20px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
@@ -629,23 +657,60 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       </div>
 
       <div id="tab-transcript" style="display:none">
-        <div class="section-title">Транскрипт</div>
-        <textarea class="form-input form-textarea" id="transcript-input" style="min-height:340px;margin-bottom:14px;font-size:13px;width:100%" placeholder="Вставте транскрипт інтерв'ю сюди...&#10;&#10;Або натисніть 'Почати інтерв'ю' — розмова запишеться автоматично"></textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="autofillFromTranscript()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Автозаповнити відповіді
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="saveTranscript()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
-            Зберегти транскрипт
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="downloadTranscript()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Завантажити .txt
-          </button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--text3)" onclick="document.getElementById('transcript-input').value='';transcriptBuffer='';showToast('Очищено')">Очистити</button>
+
+        <!-- Sub-tabs -->
+        <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:18px">
+          <div class="sub-tab active" onclick="switchSubTab(this,'stab-raw')" style="padding:7px 16px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px">Текст</div>
+          <div class="sub-tab" onclick="switchSubTab(this,'stab-formatted')" style="padding:7px 16px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px">По ролях</div>
+          <div class="sub-tab" onclick="switchSubTab(this,'stab-pjg')" style="padding:7px 16px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px">Pains · Gains · Jobs</div>
         </div>
+
+        <!-- RAW TEXT -->
+        <div id="stab-raw">
+          <textarea class="form-input form-textarea" id="transcript-input" style="min-height:340px;margin-bottom:14px;font-size:13px;width:100%" placeholder="Вставте транскрипт інтерв'ю сюди...&#10;&#10;Або натисніть 'Почати інтерв'ю' — розмова запишеться автоматично"></textarea>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="autofillFromTranscript()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Автозаповнити відповіді
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="formatTranscriptByRoles()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              Розбити по ролях
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="saveTranscript()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+              Зберегти
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="downloadTranscript()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              .txt
+            </button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--text3)" onclick="document.getElementById('transcript-input').value='';transcriptBuffer='';document.getElementById('stab-formatted-content').innerHTML='';showToast('Очищено')">Очистити</button>
+          </div>
+        </div>
+
+        <!-- FORMATTED BY ROLES -->
+        <div id="stab-formatted" style="display:none">
+          <div id="stab-formatted-content">
+            <div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0">
+              Натисніть "Розбити по ролях" на вкладці "Текст" — AI виділить репліки інтерв'юера та респондента
+            </div>
+          </div>
+        </div>
+
+        <!-- PAINS · GAINS · JOBS -->
+        <div id="stab-pjg" style="display:none">
+          <div id="stab-pjg-content">
+            <div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0;margin-bottom:16px">
+              Натисніть кнопку нижче — AI виділить болі, вигоди та jobs-to-be-done
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="analyzePainsGainsJobs()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Аналізувати Pains · Gains · Jobs
+          </button>
+        </div>
+
       </div>
 
       <div id="tab-summary" style="display:none">
@@ -1475,6 +1540,9 @@ async function openInterview(id) {
     // banners
     document.getElementById('start-interview-banner').style.display = iv.status==='planned' ? 'flex' : 'none';
     document.getElementById('live-interview-banner').style.display = 'none';
+    // status select in answers tab
+    const statusSel = document.getElementById('interview-status-select');
+    if (statusSel) statusSel.value = iv.status;
     // notes
     document.getElementById('detail-notes').value = iv.general_notes||'';
     // transcript
@@ -1529,6 +1597,8 @@ async function saveAnswers() {
   showLoader('Збереження...');
   try {
     const textareas = document.querySelectorAll('#detail-answers-list .script-answer');
+    const filledCount = Array.from(textareas).filter(ta => ta.value.trim()).length;
+
     for (const ta of textareas) {
       const aid = ta.dataset.aid;
       const qid = ta.dataset.qid;
@@ -1546,9 +1616,278 @@ async function saveAnswers() {
         if (res && res[0]) ta.dataset.aid = res[0].id;
       }
     }
-    showToast('Відповіді збережено ✓');
+
+    // auto-change status: planned → done if any answers filled
+    const currentIv = allInterviews.find(i => i.id === currentInterviewId);
+    if (currentIv && currentIv.status === 'planned' && filledCount > 0) {
+      await sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: 'done' });
+      currentIv.status = 'done';
+      // update badge
+      const badge = document.getElementById('detail-status-badge');
+      if (badge) { badge.className = 'badge badge-done'; badge.textContent = 'Проведено'; }
+      // update status select
+      const statusSel = document.getElementById('interview-status-select');
+      if (statusSel) statusSel.value = 'done';
+      document.getElementById('edit-status').value = 'done';
+      renderInterviews(allInterviews);
+      updateStats();
+    }
+
+    showToast(`Збережено ${filledCount} відповідей ✓`);
   } catch(e) { showToast('Помилка: ' + e.message); }
   hideLoader();
+}
+
+function switchSubTab(el, tabId) {
+  el.closest('[id="tab-transcript"]').querySelectorAll('.sub-tab').forEach(t => {
+    t.classList.remove('active');
+    t.style.borderBottomColor = 'transparent';
+    t.style.color = 'var(--text2)';
+  });
+  el.classList.add('active');
+  el.style.borderBottomColor = 'var(--accent)';
+  el.style.color = 'var(--accent-text)';
+  ['stab-raw','stab-formatted','stab-pjg'].forEach(id => {
+    const el2 = document.getElementById(id);
+    if (el2) el2.style.display = id === tabId ? 'block' : 'none';
+  });
+}
+
+async function formatTranscriptByRoles() {
+  const transcript = document.getElementById('transcript-input').value.trim();
+  if (!transcript) { showToast('Спочатку вставте транскрипт'); return; }
+  if (!CLAUDE_KEY) { openModal('modal-api-key'); return; }
+
+  showLoader('AI розбиває по ролях...');
+  try {
+    const iv = allInterviews.find(i => i.id === currentInterviewId);
+    const interviewerName = iv?.interviewer || 'Інтерв\'юер';
+    const respondentName = iv?.respondent_name || 'Респондент';
+
+    const prompt = `Розбий цей транскрипт інтерв'ю на репліки по ролях.
+
+Транскрипт:
+${transcript}
+
+Визнач хто говорить — інтерв'юер ("${interviewerName}") та респондент ("${respondentName}").
+
+Поверни ТІЛЬКИ JSON масив:
+[{"role": "interviewer", "name": "${interviewerName}", "text": "репліка"}, {"role": "respondent", "name": "${respondentName}", "text": "репліка"}, ...]
+
+Тільки JSON, без коментарів.`;
+
+    const result = await callClaude(prompt, 3000);
+    const clean = result.replace(/```json|```/g,'').trim();
+    const lines = JSON.parse(clean);
+
+    renderRolesView(lines);
+    const subTabs = document.querySelectorAll('#tab-transcript .sub-tab');
+    if (subTabs[1]) switchSubTab(subTabs[1], 'stab-formatted');
+    showToast('Розбито по ролях ✓ — клікайте на репліку щоб редагувати');
+  } catch(e) {
+    showToast('Помилка AI: ' + e.message);
+    console.error(e);
+  }
+  hideLoader();
+}
+
+function renderRolesView(lines) {
+  const iv = allInterviews.find(i => i.id === currentInterviewId);
+  const interviewerName = iv?.interviewer || 'Інтерв\'юер';
+  const respondentName = iv?.respondent_name || 'Респондент';
+
+  const container = document.getElementById('stab-formatted-content');
+  container.innerHTML = `
+    <div id="roles-list" style="margin-bottom:14px">
+      ${lines.map((l, idx) => renderRoleBubble(l, idx)).join('')}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="addRoleLine('interviewer','${interviewerName}')">
+        + Репліка інтерв'юера
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="addRoleLine('respondent','${respondentName}')">
+        + Репліка респондента
+      </button>
+    </div>`;
+
+  // store lines in DOM for editing
+  container.dataset.lines = JSON.stringify(lines);
+}
+
+function renderRoleBubble(line, idx) {
+  const isInterviewer = line.role === 'interviewer';
+  return `
+    <div class="role-block ${line.role}" id="role-line-${idx}" style="position:relative">
+      <div class="role-avatar">${line.name.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;max-width:82%">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span class="role-name" style="opacity:1;font-weight:700;font-size:11px;color:${isInterviewer ? 'var(--accent-text)' : 'var(--text2)'}">${line.name}</span>
+          <button onclick="toggleRoleLineSide(${idx})" style="font-size:10px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0" title="Змінити роль">⇄</button>
+          <button onclick="deleteRoleLine(${idx})" style="font-size:10px;background:none;border:none;cursor:pointer;color:var(--red);padding:0" title="Видалити">✕</button>
+        </div>
+        <div class="role-bubble" contenteditable="true"
+          onblur="updateRoleLineText(${idx}, this.textContent)"
+          style="outline:none;cursor:text;min-height:36px"
+          onfocus="this.style.boxShadow='0 0 0 2px var(--accent)'"
+          onblur2="this.style.boxShadow='none'"
+        >${line.text}</div>
+      </div>
+    </div>`;
+}
+
+function getRolesData() {
+  const container = document.getElementById('stab-formatted-content');
+  return JSON.parse(container.dataset.lines || '[]');
+}
+
+function saveRolesData(lines) {
+  const container = document.getElementById('stab-formatted-content');
+  container.dataset.lines = JSON.stringify(lines);
+}
+
+function updateRoleLineText(idx, text) {
+  const lines = getRolesData();
+  if (lines[idx]) { lines[idx].text = text.trim(); saveRolesData(lines); }
+}
+
+function toggleRoleLineSide(idx) {
+  const lines = getRolesData();
+  if (!lines[idx]) return;
+  const iv = allInterviews.find(i => i.id === currentInterviewId);
+  if (lines[idx].role === 'interviewer') {
+    lines[idx].role = 'respondent';
+    lines[idx].name = iv?.respondent_name || 'Респондент';
+  } else {
+    lines[idx].role = 'interviewer';
+    lines[idx].name = iv?.interviewer || 'Інтерв\'юер';
+  }
+  saveRolesData(lines);
+  renderRolesView(lines);
+  showToast('Роль змінено');
+}
+
+function deleteRoleLine(idx) {
+  const lines = getRolesData();
+  lines.splice(idx, 1);
+  saveRolesData(lines);
+  renderRolesView(lines);
+}
+
+function addRoleLine(role, name) {
+  const lines = getRolesData();
+  lines.push({ role, name, text: '' });
+  saveRolesData(lines);
+  renderRolesView(lines);
+  // focus new line
+  setTimeout(() => {
+    const bubbles = document.querySelectorAll('#roles-list .role-bubble');
+    if (bubbles.length) bubbles[bubbles.length-1].focus();
+  }, 100);
+}
+
+async function analyzePainsGainsJobs() {
+  const transcript = document.getElementById('transcript-input').value.trim();
+  if (!transcript) { showToast('Спочатку вставте транскрипт'); return; }
+  if (!CLAUDE_KEY) { openModal('modal-api-key'); return; }
+
+  showLoader('AI аналізує Pains · Gains · Jobs...');
+  try {
+    const prompt = `Проаналізуй цей транскрипт customer discovery інтерв'ю та виділи:
+
+Транскрипт:
+${transcript}
+
+Поверни ТІЛЬКИ JSON:
+{
+  "pains": [{"text": "біль", "quote": "дослівна цитата або порожньо"}, ...],
+  "gains": [{"text": "вигода/бажаний результат", "quote": "цитата або порожньо"}, ...],
+  "jobs": [{"text": "job-to-be-done", "quote": "цитата або порожньо"}, ...]
+}
+
+Мінімум 3 пункти в кожній категорії. Тільки JSON.`;
+
+    const result = await callClaude(prompt, 2000);
+    const clean = result.replace(/```json|```/g,'').trim();
+    const data = JSON.parse(clean);
+
+    renderPGJ(data);
+    const subTabs = document.querySelectorAll('#tab-transcript .sub-tab');
+    if (subTabs[2]) switchSubTab(subTabs[2], 'stab-pjg');
+    showToast('Аналіз готовий ✓ — клікайте для редагування');
+  } catch(e) {
+    showToast('Помилка AI: ' + e.message);
+    console.error(e);
+  }
+  hideLoader();
+}
+
+function renderPGJ(data) {
+  const categories = [
+    { key: 'pains',  label: '😣 Pains',          bg: '#FEE2E2', border: '#FCA5A5', text: '#991B1B', accent: '#DC2626' },
+    { key: 'gains',  label: '✨ Gains',           bg: '#ECFDF5', border: '#6EE7B7', text: '#065F46', accent: '#059669' },
+    { key: 'jobs',   label: '🎯 Jobs to be Done', bg: '#EEF1FE', border: '#C4B5FD', text: '#4C1D95', accent: '#7C3AED' }
+  ];
+
+  const container = document.getElementById('stab-pjg-content');
+  container.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">` +
+    categories.map(cat => `
+      <div style="background:${cat.bg};border:1.5px solid ${cat.border};border-radius:var(--radius);padding:16px 18px">
+        <div style="font-size:13px;font-weight:800;color:${cat.text};margin-bottom:12px">${cat.label}</div>
+        <div id="pgj-list-${cat.key}">
+          ${(data[cat.key]||[]).map((item,i) => renderPGJItem(cat, item, i)).join('')}
+        </div>
+        <button onclick="addPGJItem('${cat.key}')" style="margin-top:8px;font-size:11px;font-weight:600;color:${cat.accent};background:none;border:1.5px dashed ${cat.border};border-radius:7px;padding:5px 10px;cursor:pointer;width:100%">+ Додати</button>
+      </div>`).join('') +
+    `</div>`;
+
+  container.dataset.pgj = JSON.stringify(data);
+}
+
+function renderPGJItem(cat, item, idx) {
+  return `
+    <div id="pgj-item-${cat.key}-${idx}" style="margin-bottom:10px;padding:8px 10px;background:white;border:1.5px solid ${cat.border};border-radius:8px;position:relative">
+      <div contenteditable="true"
+        style="font-size:13px;font-weight:600;color:${cat.text};outline:none;min-height:20px"
+        onblur="updatePGJItem('${cat.key}',${idx},'text',this.textContent)"
+        onfocus="this.style.background='rgba(255,255,255,0.8)'">${item.text}</div>
+      ${item.quote ? `<div contenteditable="true"
+        style="font-size:11px;font-style:italic;color:${cat.accent};margin-top:4px;outline:none;opacity:0.85"
+        onblur="updatePGJItem('${cat.key}',${idx},'quote',this.textContent)"
+        >"${item.quote}"</div>` : `
+        <div contenteditable="true"
+        style="font-size:11px;font-style:italic;color:${cat.accent};margin-top:4px;outline:none;opacity:0.5"
+        onblur="updatePGJItem('${cat.key}',${idx},'quote',this.textContent)"
+        placeholder="+ цитата..."></div>`}
+      <button onclick="deletePGJItem('${cat.key}',${idx})" style="position:absolute;top:4px;right:6px;background:none;border:none;cursor:pointer;color:${cat.accent};opacity:0.4;font-size:12px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.4">✕</button>
+    </div>`;
+}
+
+function getPGJData() {
+  const c = document.getElementById('stab-pjg-content');
+  return c ? JSON.parse(c.dataset.pgj || '{"pains":[],"gains":[],"jobs":[]}') : {pains:[],gains:[],jobs:[]};
+}
+
+function updatePGJItem(cat, idx, field, val) {
+  const data = getPGJData();
+  if (data[cat] && data[cat][idx]) data[cat][idx][field] = val.trim();
+  document.getElementById('stab-pjg-content').dataset.pgj = JSON.stringify(data);
+}
+
+function deletePGJItem(cat, idx) {
+  const data = getPGJData();
+  if (data[cat]) data[cat].splice(idx, 1);
+  renderPGJ(data);
+}
+
+function addPGJItem(cat) {
+  const data = getPGJData();
+  if (!data[cat]) data[cat] = [];
+  data[cat].push({ text: '', quote: '' });
+  renderPGJ(data);
+  setTimeout(() => {
+    const items = document.querySelectorAll(`#pgj-list-${cat} [contenteditable]`);
+    if (items.length) items[items.length-2]?.focus();
+  }, 100);
 }
 
 async function saveTranscript() {
@@ -1590,6 +1929,21 @@ function downloadTranscript() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('Файл завантажується ✓');
+}
+
+async function changeInterviewStatus(newStatus) {
+  try {
+    await sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: newStatus });
+    const idx = allInterviews.findIndex(i => i.id === currentInterviewId);
+    if (idx >= 0) allInterviews[idx].status = newStatus;
+    // update badge in header
+    const badge = document.getElementById('detail-status-badge');
+    if (badge) { badge.className = 'badge ' + statusClass(newStatus); badge.textContent = statusLabel(newStatus); }
+    document.getElementById('edit-status').value = newStatus;
+    renderInterviews(allInterviews);
+    updateStats();
+    showToast(`Статус змінено: ${statusLabel(newStatus)} ✓`);
+  } catch(e) { showToast('Помилка: ' + e.message); }
 }
 
 async function saveNotes() {
@@ -1779,7 +2133,60 @@ async function loadQuotesPage() {
   if (!currentProjectId) return;
   const quotes = await sb(`quotes?project_id=eq.${currentProjectId}&order=created_at.desc`);
   renderQuotesList(quotes||[]);
-  // also update analysis
+  renderAnalysisPage();
+}
+
+async function renderAnalysisPage() {
+  if (!currentProjectId) return;
+
+  const analyzed = allInterviews.filter(i => i.status === 'analyzed' || i.ai_summary);
+  const quotes = await sb(`quotes?project_id=eq.${currentProjectId}&order=created_at.desc`);
+
+  // show/hide general summary button (only if 2+ analyzed)
+  const btnGeneral = document.getElementById('btn-project-summary');
+  const generalBox = document.getElementById('analysis-general-box');
+  if (btnGeneral) btnGeneral.style.display = analyzed.length >= 2 ? 'inline-flex' : 'none';
+  if (generalBox) generalBox.style.display = analyzed.length >= 2 ? 'block' : 'none';
+
+  // render per-interview summaries
+  const listEl = document.getElementById('analysis-interviews-list');
+  if (!listEl) return;
+
+  if (analyzed.length === 0) {
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">Ще немає проаналізованих інтерв'ю</div><div class="empty-text">Згенеруйте AI-підсумок в картці інтерв'ю щоб він з'явився тут</div></div>`;
+    return;
+  }
+
+  listEl.innerHTML = analyzed.map(iv => `
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;transition:all 0.18s" onmouseover="this.style.borderColor='#C4B5FD'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-grad);color:white;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${iv.respondent_name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:700">${iv.respondent_name}</div>
+            <div style="font-size:12px;color:var(--text2);font-weight:500">${[iv.company, iv.role].filter(Boolean).join(' · ')}${iv.interview_date ? ' · ' + formatDate(iv.interview_date) : ''}</div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="color:var(--accent-text);font-size:12px;flex-shrink:0" onclick="openInterview('${iv.id}')">
+          Відкрити →
+        </button>
+      </div>
+      ${iv.ai_summary ? `
+        <div style="font-size:13px;color:var(--text);line-height:1.65;font-weight:500">
+          ${iv.ai_summary
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/gs, '<ul style="padding-left:18px;margin:6px 0">$1</ul>')
+            .replace(/\n\n/g, '</p><p style="margin-top:8px">')
+            .replace(/\n/g, '<br>')}
+        </div>` : `
+        <div style="font-size:13px;color:var(--text3);font-style:italic">Підсумок ще не згенеровано — відкрийте інтерв'ю і натисніть "Згенерувати підсумок"</div>`}
+    </div>`).join('');
+
+  // quotes
   renderAnalysisQuotes(quotes||[]);
 }
 
@@ -1789,14 +2196,24 @@ function renderQuotesList(quotes) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><div class="empty-title">Ще немає цитат</div><div class="empty-text">Цитати зʼявляться тут після того як ви їх додасте в інтерв'ю</div></div>`;
     return;
   }
-  el.innerHTML = quotes.map(q => `
+  el.innerHTML = quotes.map(q => {
+    // find interview for respondent name
+    const iv = allInterviews.find(i => i.id === q.interview_id);
+    const who = iv ? [iv.respondent_name, iv.company].filter(Boolean).join(' · ') : '';
+    const date = q.created_at ? new Date(q.created_at).toLocaleDateString('uk-UA', {day:'numeric', month:'short'}) : '';
+    return `
     <div class="quote-card">
       <div class="quote-bullet">›</div>
       <div class="quote-body">
         <div class="quote-text">${q.quote_text}</div>
-        <div class="quote-meta">${q.created_at ? new Date(q.created_at).toLocaleDateString('uk-UA') : ''}</div>
+        <div class="quote-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${who ? `<span style="font-weight:700;color:var(--text2)">${who}</span>` : ''}
+          ${date ? `<span>${date}</span>` : ''}
+          ${iv ? `<button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent-text);padding:2px 6px" onclick="openInterview('${iv.id}')">Відкрити інтерв'ю →</button>` : ''}
+        </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function filterQuotes() {
@@ -2012,23 +2429,25 @@ ${answers}
 }
 
 async function generateProjectSummary() {
-  const analyzed = allInterviews.filter(i=>i.status==='analyzed');
-  if (analyzed.length === 0) { showToast('Немає проаналізованих інтерв\'ю'); return; }
+  const analyzed = allInterviews.filter(i => i.status === 'analyzed' || i.ai_summary);
+  if (analyzed.length < 2) { showToast('Потрібно мінімум 2 проаналізованих інтерв\'ю'); return; }
   showLoader('AI аналізує весь проєкт...');
   try {
     let allSummaries = '';
     for (const iv of analyzed) {
-      const answers = await sb(`answers?interview_id=eq.${iv.id}&order=position.asc`);
-      allSummaries += `\n\n--- ${iv.respondent_name} (${iv.company||''}) ---\n`;
+      allSummaries += `\n\n═══ ${iv.respondent_name}${iv.company ? ' · ' + iv.company : ''} ═══\n`;
       if (iv.ai_summary) { allSummaries += iv.ai_summary; }
-      else if (answers) { allSummaries += answers.map(a=>`П: ${a.question_text}\nВ: ${a.answer_text||'—'}`).join('\n'); }
+      else {
+        const answers = await sb(`answers?interview_id=eq.${iv.id}&order=position.asc`);
+        if (answers) allSummaries += answers.map(a => `П: ${a.question_text}\nВ: ${a.answer_text||'—'}`).join('\n');
+      }
     }
 
     const prompt = `Ти аналізуєш серію customer discovery інтерв'ю для продуктової команди. Дай зведений аналіз українською мовою.
 
 ${allSummaries}
 
-Структура:
+Структура відповіді:
 **Головні больові точки (по частоті):**
 - ...
 
@@ -2038,24 +2457,28 @@ ${allSummaries}
 **Jobs to be done:**
 - ...
 
-**Готовність платити:**
+**Готовність до рішення:**
 - ...
 
 **Рекомендації для продукту:**
 - ...`;
 
-    const result = await callClaude(prompt, 1000);
-    document.getElementById('analysis-summary-text').textContent = result;
-    document.getElementById('analysis-summary-text').style.fontStyle = 'normal';
-    document.getElementById('analysis-summary-text').style.color = 'var(--text)';
+    const result = await callClaude(prompt, 2000);
 
-    // update stats panel
-    const statsEl = document.getElementById('analysis-stats');
-    statsEl.innerHTML = `
-      <div class="insight-card"><div style="font-size:13px;font-weight:700;margin-bottom:8px">Проаналізовано</div><div style="font-size:28px;font-weight:800;background:var(--accent-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${analyzed.length}/${allInterviews.length}</div><div style="font-size:12px;color:var(--text2)">інтерв'ю</div></div>`;
-    showToast('Аналіз готовий ✓');
+    const el = document.getElementById('analysis-summary-text');
+    el.innerHTML = result
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul style="padding-left:18px;margin:6px 0">$1</ul>')
+      .replace(/\n\n/g, '</p><p style="margin-top:10px">')
+      .replace(/\n/g, '<br>');
+    el.style.fontStyle = 'normal';
+    el.style.color = 'var(--text)';
+
+    showToast('Загальний аналіз готовий ✓');
   } catch(e) {
-    showToast('Потрібен Claude API ключ');
+    showToast('Помилка AI: ' + e.message);
     console.error(e);
   }
   hideLoader();
@@ -2170,11 +2593,14 @@ async function addSelectedTemplate(gid) {
 }
 
 // ═══════════════════════════════════════
-// LIVE INTERVIEW MODE + SPEECH RECOGNITION
+// LIVE INTERVIEW MODE + SPEECH + AUDIO
 // ═══════════════════════════════════════
 let speechRecognition = null;
 let isRecording = false;
 let transcriptBuffer = '';
+let mediaRecorder = null;
+let audioChunks = [];
+let audioBlob = null;
 
 function startInterview() {
   document.getElementById('start-interview-banner').style.display = 'none';
@@ -2183,14 +2609,70 @@ function startInterview() {
     ta.style.borderColor = 'var(--accent)';
     if (!ta.value.trim()) ta.placeholder = '🎙 Записуйте відповідь...';
   });
+  audioChunks = [];
+  audioBlob = null;
+  // hide download button if visible
+  const dlBtn = document.getElementById('audio-download-btn');
+  if (dlBtn) dlBtn.style.display = 'none';
 
-  // try to start speech recognition
+  startAudioRecording();
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (SpeechRecognition) {
-    startSpeechRecognition();
-  } else {
-    showToast('Інтерв\'ю розпочато 🎙 (диктофон недоступний у цьому браузері)');
+  if (SpeechRecognition) startSpeechRecognition();
+  else showToast('🎙 Запис розпочато (тільки аудіо — диктофон недоступний у цьому браузері)');
+}
+
+async function startAudioRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      showAudioDownloadBanner();
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRecorder.start(1000);
+  } catch(e) {
+    if (e.name === 'NotAllowedError') showToast('Немає дозволу на мікрофон');
+    else showToast('Помилка запису аудіо: ' + e.message);
   }
+}
+
+function showAudioDownloadBanner() {
+  if (!audioBlob) return;
+  const iv = allInterviews.find(i => i.id === currentInterviewId);
+  const name = iv ? iv.respondent_name.replace(/\s+/g,'_') : 'interview';
+  const date = iv?.interview_date || new Date().toISOString().slice(0,10);
+
+  let btn = document.getElementById('audio-download-btn');
+  if (!btn) {
+    btn = document.createElement('div');
+    btn.id = 'audio-download-btn';
+    // insert after live banner
+    const banner = document.getElementById('live-interview-banner');
+    banner.parentNode.insertBefore(btn, banner.nextSibling);
+  }
+
+  const url = URL.createObjectURL(audioBlob);
+  const sizeMb = (audioBlob.size / 1024 / 1024).toFixed(1);
+  btn.style.display = 'flex';
+  btn.innerHTML = `
+    <div style="background:linear-gradient(135deg,#ECFDF5,#F0FDF4);border:1.5px solid #6EE7B7;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#059669,#34D399);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="width:16px;height:16px"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#065F46">Аудіозапис готовий — ${sizeMb} МБ</div>
+          <div style="font-size:12px;color:#059669;margin-top:1px">Збережіть файл на комп'ютер</div>
+        </div>
+      </div>
+      <a href="${url}" download="audio_${name}_${date}.webm" class="btn btn-sm" style="background:linear-gradient(135deg,#059669,#34D399);color:white;border:none;flex-shrink:0;text-decoration:none" onclick="showToast('Аудіо завантажується ✓')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Завантажити .webm
+      </a>
+    </div>`;
 }
 
 function startSpeechRecognition() {
@@ -2200,7 +2682,6 @@ function startSpeechRecognition() {
   speechRecognition.continuous = true;
   speechRecognition.interimResults = true;
 
-  // get or create transcript textarea — switch to transcript tab
   const transcriptInput = document.getElementById('transcript-input');
   transcriptBuffer = transcriptInput.value || '';
 
@@ -2214,11 +2695,8 @@ function startSpeechRecognition() {
     let interim = '';
     let final = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) {
-        final += event.results[i][0].transcript + ' ';
-      } else {
-        interim += event.results[i][0].transcript;
-      }
+      if (event.results[i].isFinal) final += event.results[i][0].transcript + ' ';
+      else interim += event.results[i][0].transcript;
     }
     if (final) transcriptBuffer += final;
     transcriptInput.value = transcriptBuffer + (interim ? `[${interim}]` : '');
@@ -2226,22 +2704,15 @@ function startSpeechRecognition() {
   };
 
   speechRecognition.onerror = (e) => {
-    if (e.error === 'not-allowed') showToast('Немає дозволу на мікрофон — дозвольте в браузері');
-    else if (e.error !== 'no-speech') showToast('Помилка запису: ' + e.error);
+    if (e.error === 'not-allowed') showToast('Немає дозволу на мікрофон');
+    else if (e.error !== 'no-speech') showToast('Помилка: ' + e.error);
   };
 
   speechRecognition.onend = () => {
-    // auto-restart if still in interview mode
-    if (isRecording) {
-      try { speechRecognition.start(); } catch(e) {}
-    }
+    if (isRecording) try { speechRecognition.start(); } catch(e) {}
   };
 
-  try {
-    speechRecognition.start();
-  } catch(e) {
-    showToast('Не вдалось запустити диктофон: ' + e.message);
-  }
+  try { speechRecognition.start(); } catch(e) { showToast('Не вдалось запустити диктофон'); }
 }
 
 function updateRecordingUI(recording) {
@@ -2253,56 +2724,52 @@ function updateRecordingUI(recording) {
 }
 
 function toggleRecording() {
-  if (!speechRecognition) return;
+  if (!speechRecognition && !mediaRecorder) return;
   if (isRecording) {
     isRecording = false;
-    speechRecognition.stop();
+    if (speechRecognition) speechRecognition.stop();
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.pause();
     updateRecordingUI(false);
     showToast('⏸ Запис на паузі');
   } else {
     isRecording = true;
-    speechRecognition.start();
+    if (speechRecognition) try { speechRecognition.start(); } catch(e) {}
+    if (mediaRecorder && mediaRecorder.state === 'paused') mediaRecorder.resume();
     updateRecordingUI(true);
     showToast('▶ Запис відновлено');
   }
 }
 
 function endInterview() {
-  // stop recording
   isRecording = false;
-  if (speechRecognition) {
-    speechRecognition.stop();
-    speechRecognition = null;
-  }
-  // clean up interim brackets from transcript
+
+  if (speechRecognition) { speechRecognition.stop(); speechRecognition = null; }
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+
   const transcriptInput = document.getElementById('transcript-input');
-  if (transcriptInput && transcriptBuffer) {
-    transcriptInput.value = transcriptBuffer;
-  }
+  if (transcriptInput && transcriptBuffer) transcriptInput.value = transcriptBuffer;
 
   document.getElementById('live-interview-banner').style.display = 'none';
   document.querySelectorAll('#detail-answers-list .script-answer').forEach(ta => {
     ta.style.borderColor = '';
     ta.placeholder = 'Відповідь...';
   });
+
   saveAnswers();
   if (transcriptBuffer.trim()) {
     sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: 'done', transcript: transcriptBuffer });
   } else {
     sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { status: 'done' });
   }
-  const idx = allInterviews.findIndex(i=>i.id===currentInterviewId);
-  if (idx>=0) allInterviews[idx].status = 'done';
+
+  const idx = allInterviews.findIndex(i => i.id === currentInterviewId);
+  if (idx >= 0) allInterviews[idx].status = 'done';
   renderInterviews(allInterviews);
   updateStats();
 
-  // if transcript has content — suggest autofill
-  if (transcriptBuffer.trim()) {
-    showToast('Інтерв\'ю завершено ✓ Транскрипт готовий — перейдіть в "Транскрипт + AI"');
-  } else {
-    showToast('Інтерв\'ю завершено ✓ Відповіді збережено');
-  }
+  showToast('Інтерв\'ю завершено ✓ Збережіть аудіозапис нижче');
 }
+
 
 // ═══════════════════════════════════════
 // UI HELPERS
@@ -2316,14 +2783,29 @@ function showPage(id) {
   if(map[id]!==undefined) items[map[id]].classList.add('active');
   if(id==='projects') loadProjects();
   if(id==='quotes') loadQuotesPage();
-  if(id==='analysis') loadQuotesPage();
+  if(id==='analysis') { loadQuotesPage(); renderAnalysisPage(); }
   if(id==='brief') loadBrief();
   if(id==='script') fillScriptFromProject();
 }
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function closeModalOutside(e,id) { if(e.target===document.getElementById(id)) closeModal(id); }
+function closeModalOutside(e, id) {
+  if (e.target !== document.getElementById(id)) return;
+  // for interview detail — check for unsaved answers
+  if (id === 'modal-interview-detail') {
+    const hasUnsaved = Array.from(document.querySelectorAll('#detail-answers-list .script-answer'))
+      .some(ta => ta.value.trim() && !ta.dataset.aid); // new unsaved answers
+    const anyFilled = Array.from(document.querySelectorAll('#detail-answers-list .script-answer'))
+      .some(ta => ta.value.trim());
+    if (anyFilled) {
+      // show inline confirmation instead of browser confirm()
+      showUnsavedWarning(() => closeModal(id));
+      return;
+    }
+  }
+  closeModal(id);
+}
 
 function switchTab(el,tabId) {
   el.closest('.modal-body').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -2336,6 +2818,38 @@ function switchTabById(tabId) {
   const body = document.getElementById(tabId).closest('.modal-body');
   body.querySelectorAll('.tab').forEach(t => { t.classList.toggle('active', t.getAttribute('onclick')?.includes(tabId)); });
   body.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = t.id===tabId ? 'block' : 'none');
+}
+
+function closeInterviewModal() {
+  const anyFilled = Array.from(document.querySelectorAll('#detail-answers-list .script-answer'))
+    .some(ta => ta.value.trim());
+  if (anyFilled) {
+    showUnsavedWarning(() => closeModal('modal-interview-detail'));
+  } else {
+    closeModal('modal-interview-detail');
+  }
+}
+
+function showUnsavedWarning(onConfirm) {
+  // create overlay warning inside modal
+  const existing = document.getElementById('unsaved-warning');
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.id = 'unsaved-warning';
+  el.style.cssText = `position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(15,14,23,0.6);backdrop-filter:blur(4px)`;
+  el.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;padding:28px 32px;max-width:380px;width:100%;box-shadow:var(--shadow-md);text-align:center;animation:slideUp 0.2s ease">
+      <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:8px;letter-spacing:-0.3px">Незбережені відповіді</div>
+      <div style="font-size:13px;color:var(--text2);font-weight:500;margin-bottom:24px;line-height:1.5">Є заповнені відповіді які ще не збережено. Закрити без збереження?</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-secondary" onclick="document.getElementById('unsaved-warning').remove()">Залишитись</button>
+        <button class="btn btn-primary" onclick="saveAnswers().then(()=>{document.getElementById('unsaved-warning').remove();})">Зберегти і закрити</button>
+        <button class="btn btn-danger" style="border:1.5px solid var(--border)" onclick="document.getElementById('unsaved-warning').remove();${onConfirm.toString().includes('closeModal') ? 'closeModal(\'modal-interview-detail\')' : ''}">Закрити без збереження</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
 }
 
 function toggleEditMode(on) {
