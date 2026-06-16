@@ -1647,7 +1647,7 @@ async function openInterview(id) {
   currentInterviewId = id;
   showLoader('Завантаження...');
   try {
-    const iv = allInterviews.find(i=>i.id===id) || (await sb(`interviews?id=eq.${id}`))[0];
+    const iv = (await sb(`interviews?id=eq.${id}&limit=1`))[0];
     const answers = await sb(`answers?interview_id=eq.${id}&order=position.asc`);
     const quotes = await sb(`quotes?interview_id=eq.${id}&order=created_at.asc`);
 
@@ -1674,7 +1674,15 @@ async function openInterview(id) {
     // transcript
     const transcriptInput = document.getElementById('transcript-input');
     transcriptInput.value = iv.transcript || '';
-    transcriptBuffer = iv.transcript || '';    // summary
+    transcriptBuffer = iv.transcript || '';
+
+    // restore saved AI results
+    if (iv.roles_json && iv.roles_json.length) {
+      renderRolesView(iv.roles_json);
+    }
+    if (iv.pgj_json) {
+      renderPGJ(iv.pgj_json);
+    }    // summary
     document.getElementById('detail-summary-text').textContent = iv.ai_summary || 'Натисніть "Згенерувати" для отримання AI-підсумку';
     document.getElementById('detail-summary-text').style.fontStyle = iv.ai_summary ? 'normal' : 'italic';
     document.getElementById('detail-summary-text').style.color = iv.ai_summary ? 'var(--text)' : 'var(--text3)';
@@ -1826,9 +1834,11 @@ ${truncated}
     }
 
     renderRolesView(lines);
+    // save to DB
+    await sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { roles_json: lines });
     const subTabs = document.querySelectorAll('#tab-transcript .sub-tab');
     if (subTabs[1]) switchSubTab(subTabs[1], 'stab-formatted');
-    showToast(`Розбито на ${lines.length} реплік ✓`);
+    showToast(`Розбито на ${lines.length} реплік ✓ Збережено`);
   } catch(e) {
     showToast('Помилка AI: ' + e.message);
     console.error(e);
@@ -1956,9 +1966,11 @@ ${transcript}
     const data = JSON.parse(clean);
 
     renderPGJ(data);
+    // save to DB
+    await sb(`interviews?id=eq.${currentInterviewId}`, 'PATCH', { pgj_json: data });
     const subTabs = document.querySelectorAll('#tab-transcript .sub-tab');
     if (subTabs[2]) switchSubTab(subTabs[2], 'stab-pjg');
-    showToast('Аналіз готовий ✓ — клікайте для редагування');
+    showToast('Аналіз готовий ✓ Збережено');
   } catch(e) {
     showToast('Помилка AI: ' + e.message);
     console.error(e);
@@ -3493,6 +3505,8 @@ async function runMigrations() {
     `ALTER TABLE interviews ADD COLUMN IF NOT EXISTS transcript text`,
     `ALTER TABLE projects ADD COLUMN IF NOT EXISTS interview_goal int default 10`,
     `ALTER TABLE projects ADD COLUMN IF NOT EXISTS notes text`,
+    `ALTER TABLE interviews ADD COLUMN IF NOT EXISTS roles_json jsonb`,
+    `ALTER TABLE interviews ADD COLUMN IF NOT EXISTS pgj_json jsonb`,
     `CREATE TABLE IF NOT EXISTS hypotheses (
       id uuid primary key default gen_random_uuid(),
       project_id uuid references projects(id) on delete cascade,
