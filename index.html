@@ -946,6 +946,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
           ✦ Генерація скрипту за описом продукту
         </div>
       </div>
+      <div id="usage-display"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-api-key')">Скасувати</button>
@@ -1791,26 +1792,43 @@ async function formatTranscriptByRoles() {
     const interviewerName = iv?.interviewer || 'Інтерв\'юер';
     const respondentName = iv?.respondent_name || 'Респондент';
 
+    // truncate if too long (keep ~6000 chars)
+    const maxLen = 6000;
+    const truncated = transcript.length > maxLen
+      ? transcript.slice(0, maxLen) + '\n\n[...транскрипт скорочено для обробки...]'
+      : transcript;
+
     const prompt = `Розбий цей транскрипт інтерв'ю на репліки по ролях.
 
 Транскрипт:
-${transcript}
+${truncated}
 
 Визнач хто говорить — інтерв'юер ("${interviewerName}") та респондент ("${respondentName}").
+Якщо важко визначити роль — орієнтуйся: інтерв'юер ставить питання, респондент відповідає.
 
-Поверни ТІЛЬКИ JSON масив:
-[{"role": "interviewer", "name": "${interviewerName}", "text": "репліка"}, {"role": "respondent", "name": "${respondentName}", "text": "репліка"}, ...]
+Поверни ТІЛЬКИ валідний JSON масив (не більше 30 реплік):
+[{"role":"interviewer","name":"${interviewerName}","text":"репліка"},{"role":"respondent","name":"${respondentName}","text":"репліка"}]
 
-Тільки JSON, без коментарів.`;
+Тільки JSON, без коментарів, без markdown.`;
 
-    const result = await callClaude(prompt, 3000);
+    const result = await callClaude(prompt, 4000);
     const clean = result.replace(/```json|```/g,'').trim();
-    const lines = JSON.parse(clean);
+
+    // safe JSON parse
+    let lines;
+    try {
+      lines = JSON.parse(clean);
+    } catch(e) {
+      // try to fix truncated JSON
+      const lastBracket = clean.lastIndexOf('}');
+      const fixed = clean.slice(0, lastBracket + 1) + ']';
+      lines = JSON.parse(fixed);
+    }
 
     renderRolesView(lines);
     const subTabs = document.querySelectorAll('#tab-transcript .sub-tab');
     if (subTabs[1]) switchSubTab(subTabs[1], 'stab-formatted');
-    showToast('Розбито по ролях ✓ — клікайте на репліку щоб редагувати');
+    showToast(`Розбито на ${lines.length} реплік ✓`);
   } catch(e) {
     showToast('Помилка AI: ' + e.message);
     console.error(e);
@@ -2387,7 +2405,50 @@ async function callClaude(prompt, maxTokens=800) {
   });
   const data = await response.json();
   if (data.error) throw new Error(data.error.message);
+
+  // track usage
+  const input = data.usage?.input_tokens || 0;
+  const output = data.usage?.output_tokens || 0;
+  const prev = JSON.parse(localStorage.getItem('discovery_usage') || '{"input":0,"output":0,"calls":0}');
+  const updated = { input: prev.input + input, output: prev.output + output, calls: prev.calls + 1 };
+  localStorage.setItem('discovery_usage', JSON.stringify(updated));
+  updateUsageDisplay();
+
   return data.content[0].text;
+}
+
+function updateUsageDisplay() {
+  const usage = JSON.parse(localStorage.getItem('discovery_usage') || '{"input":0,"output":0,"calls":0}');
+  // claude-sonnet-4-5 pricing: $3/1M input, $15/1M output
+  const cost = ((usage.input * 3 + usage.output * 15) / 1_000_000).toFixed(4);
+  const el = document.getElementById('usage-display');
+  if (el) {
+    el.innerHTML = `
+      <div style="background:var(--bg);border-radius:9px;padding:12px 14px;margin-top:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Статистика використання</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:var(--accent)">$${cost}</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:600;margin-top:1px">приблизна вартість</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800">${usage.calls}</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:600;margin-top:1px">AI запитів</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800">${((usage.input + usage.output)/1000).toFixed(1)}K</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:600;margin-top:1px">токенів</div>
+          </div>
+        </div>
+        <button onclick="resetUsage()" style="width:100%;margin-top:10px;font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;text-decoration:underline">Скинути лічильник</button>
+      </div>`;
+  }
+}
+
+function resetUsage() {
+  localStorage.removeItem('discovery_usage');
+  updateUsageDisplay();
+  showToast('Лічильник скинуто');
 }
 
 async function generateScript() {
@@ -2916,7 +2977,10 @@ function showPage(id) {
   if(id==='notes') loadNotesPage();
 }
 
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'modal-api-key') updateUsageDisplay();
+}
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function closeModalOutside(e, id) {
   if (e.target !== document.getElementById(id)) return;
